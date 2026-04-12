@@ -1,6 +1,6 @@
 [project]
 name = "unifiedui-sample-rest-api-agent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sample REST API Agent Service for the unified-ui platform"
 readme = "README.md"
 license = "MIT"

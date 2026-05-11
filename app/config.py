@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     entra_id_authorized_upns: str = ""
     entra_id_authorized_app_ids: str = ""
 
+    foundry_project_endpoint: str = ""
+    foundry_project_api_key: str = ""
+    foundry_agent: str = ""
+    foundry_api_version: str = "2025-11-15-preview"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     def get_authorized_upns(self) -> list[str]:

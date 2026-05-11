@@ -1,11 +1,11 @@
-"""Agent invoke endpoints — SSE streaming for LangChain and LangGraph agents."""
+"""Agent invoke endpoints — SSE streaming for LangChain, LangGraph, and Foundry proxy agents."""
 
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
@@ -17,6 +17,8 @@ from unifiedui_sdk.streaming.writer import StreamWriter
 from app.agents.langchain_agent import create_langchain_adapter
 from app.agents.langgraph_agent import create_langgraph_adapter
 from app.agents.echo_agent import echo_stream
+from app.agents.foundry_proxy_agent import foundry_proxy_stream
+from app.config import settings
 from app.middleware.auth import (
     verify_anonymous,
     verify_api_key_header,
@@ -196,6 +198,41 @@ async def invoke_langgraph_entra_id_appreg(
 ) -> EventSourceResponse:
     """Invoke LangGraph agent (Entra ID App Registration) — returns SSE stream."""
     return EventSourceResponse(_stream_agent(request, "langgraph"))
+
+
+# --- Foundry Proxy endpoints ---
+
+
+async def _stream_foundry_proxy(
+    request: RestApiAgentInvokeRequest,
+    auth_header: dict[str, str],
+) -> AsyncGenerator[dict[str, str], None]:
+    """Stream Foundry proxy response as SSE events."""
+    async for msg in foundry_proxy_stream(request, auth_header):
+        yield {"event": msg.type.value, "data": msg.model_dump_json()}
+
+
+@router.post("/api-key/agent/foundry-proxy/invoke")
+async def invoke_foundry_proxy_api_key(
+    request: RestApiAgentInvokeRequest,
+    _: None = Depends(verify_api_key_header),
+) -> EventSourceResponse:
+    """Invoke Foundry proxy (API Key auth) — uses configured Foundry API key internally."""
+    auth_header = {"api-key": settings.foundry_project_api_key}
+    return EventSourceResponse(_stream_foundry_proxy(request, auth_header))
+
+
+@router.post("/entra-id/agent/foundry-proxy/invoke")
+async def invoke_foundry_proxy_entra_id(
+    http_request: Request,
+    request: RestApiAgentInvokeRequest,
+    _: None = Depends(verify_entra_id_token),
+) -> EventSourceResponse:
+    """Invoke Foundry proxy (Entra ID) — forwards user bearer token to Foundry."""
+    authorization = http_request.headers.get("Authorization", "")
+    token = authorization.removeprefix("Bearer ").strip()
+    auth_header = {"Authorization": f"Bearer {token}"}
+    return EventSourceResponse(_stream_foundry_proxy(request, auth_header))
 
 
 # --- Echo endpoints (no LLM needed) ---

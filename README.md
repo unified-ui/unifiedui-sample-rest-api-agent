@@ -9,6 +9,7 @@ This service serves as a **reference implementation** showing how to integrate c
 - **LangChain Agent** — ReACT agent with sample tools, streamed via unified-ui SSE protocol
 - **LangGraph Agent** — LangGraph-based agent with sample tools
 - **Echo Agent** — Simple echo agent (no LLM needed, useful for testing)
+- **Foundry Proxy Agent** — Proxies requests to Microsoft Foundry, streaming responses as unified-ui SSE events
 - **5 Auth Modes** — Anonymous, Basic Auth, API Key, Entra ID User Token, Entra ID App Registration
 - **In-Memory Sessions** — Conversation management with dict-based session store
 - **SSE Streaming** — All 22 unified-ui event types via `unifiedui-sdk`
@@ -40,6 +41,10 @@ Open [http://localhost:8087/docs](http://localhost:8087/docs) for the Swagger UI
 | `API_KEY` | API key for API Key auth mode | `default-api-key` |
 | `BASIC_AUTH_USERNAME` | Username for Basic Auth | `admin` |
 | `BASIC_AUTH_PASSWORD` | Password for Basic Auth | `password` |
+| `FOUNDRY_PROJECT_ENDPOINT` | Microsoft Foundry project endpoint | — |
+| `FOUNDRY_PROJECT_API_KEY` | Foundry API key (for api-key proxy mode) | — |
+| `FOUNDRY_AGENT` | Foundry agent name | — |
+| `FOUNDRY_API_VERSION` | Foundry API version | `2025-11-15-preview` |
 
 ## Endpoints
 
@@ -75,6 +80,8 @@ Open [http://localhost:8087/docs](http://localhost:8087/docs) for the Swagger UI
 | `POST /api/v1/api-key/agent/echo/invoke` | Bearer | Echo |
 | `POST /api/v1/entra-id/agent/langchain/invoke` | Bearer | LangChain |
 | `POST /api/v1/entra-id/agent/langgraph/invoke` | Bearer | LangGraph |
+| `POST /api/v1/api-key/agent/foundry-proxy/invoke` | API Key | Foundry Proxy |
+| `POST /api/v1/entra-id/agent/foundry-proxy/invoke` | Bearer | Foundry Proxy |
 
 **Request:** `RestApiAgentInvokeRequest`
 
@@ -120,7 +127,8 @@ app/
 ├── agents/
 │   ├── langchain_agent.py     # LangchainStreamAdapter setup (Azure OpenAI)
 │   ├── langgraph_agent.py     # LanggraphStreamAdapter setup (Azure OpenAI)
-│   └── echo_agent.py          # Simple echo agent (no LLM)
+│   ├── echo_agent.py          # Simple echo agent (no LLM)
+│   └── foundry_proxy_agent.py # Foundry proxy (streams Foundry SSE → unified-ui SSE)
 ├── api/v1/
 │   ├── health.py              # Health endpoint
 │   ├── conversations.py       # Conversation creation endpoints
